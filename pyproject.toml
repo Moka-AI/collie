@@ -1,0 +1,6 @@
+[tool.ruff]
+line-length = 128
+
+exclude = [
+    "test/fixtures",
+]
