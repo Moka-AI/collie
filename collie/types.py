@@ -19,4 +19,4 @@ OneOrMany = Union[T, Sequence[T]]
 class LanguageModelType(str, Enum):
     chatglm = 'chatglm'
     llama = 'llama'
-    bloom = 'bllom'
+    bloom = 'bloom'
