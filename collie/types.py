@@ -28,3 +28,4 @@ class MixedPrecisionType(str, Enum):
     bf16 = 'bf16'
     no = 'no'
     fp8 = 'fp8'
+    auto = 'auto'

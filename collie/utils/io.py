@@ -41,7 +41,7 @@ def save_to_disk(
     output_dir: PathOrStr,
     model: PreTrainedModel | None = None,
     tokenizer: Tokenizer | None = None,
-    save_precision: MixedPrecisionType = MixedPrecisionType.no,
+    save_precision: MixedPrecisionType | None = None,
 ):
     if model:
         if save_precision == MixedPrecisionType.fp16:

@@ -47,8 +47,8 @@ def main(
     seed: int = 42,
     lr: float = 2e-5,
     weight_decay: float = 1e-3,
-    mixed_precision: MixedPrecisionType = MixedPrecisionType.bf16,
-    save_precision: Optional[MixedPrecisionType] = None,
+    mixed_precision: Optional[MixedPrecisionType] = MixedPrecisionType.auto,
+    save_precision: Optional[MixedPrecisionType] = MixedPrecisionType.auto,
     gradient_accumulation_steps: int = 1,
     model_type: Optional[LanguageModelType] = None,
     save_on_epoch_end: bool = False,
@@ -62,7 +62,13 @@ def main(
     if model_type is None:
         model_type = get_model_type_from_name(model_name_or_path)
 
-    if save_precision is None:
+    if mixed_precision is MixedPrecisionType.auto:
+        if os.getenv('ACCELERATE_MIXED_PRECISION') is None:
+            mixed_precision = MixedPrecisionType.bf16
+        else:
+            mixed_precision = None
+
+    if save_precision is MixedPrecisionType.auto:
         save_precision = mixed_precision
 
     output_dir = output_dir or Path('experiments') / f'{model_type}-fft'
@@ -70,7 +76,7 @@ def main(
         project_dir=str(output_dir), automatic_checkpoint_naming=True, total_limit=num_max_checkpoints
     )
     accelerator = Accelerator(
-        mixed_precision=mixed_precision,
+        mixed_precision=mixed_precision.value if mixed_precision is not None else None,
         gradient_accumulation_steps=gradient_accumulation_steps,
         project_config=project_config,
         log_with=['tensorboard'] if use_tensorboard else None,
