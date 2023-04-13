@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import TypeVar, Sequence, Union
 from enum import Enum
 
-from accelerate.utils import PrecisionType as PrecisionType
 from transformers import PreTrainedModel as PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
@@ -22,3 +21,10 @@ class LanguageModelType(str, Enum):
     chatglm = 'chatglm'
     llama = 'llama'
     bloom = 'bloom'
+
+
+class MixedPrecisionType(str, Enum):
+    fp16 = 'fp16'
+    bf16 = 'bf16'
+    no = 'no'
+    fp8 = 'fp8'

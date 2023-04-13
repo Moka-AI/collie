@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 from datasets import load_dataset, DatasetDict
 
-from collie.types import PathOrStr, Tokenizer, PreTrainedModel, PrecisionType
+from collie.types import PathOrStr, Tokenizer, PreTrainedModel, MixedPrecisionType
 
 
 def convert_suffix_to_type(suffix: str):
@@ -41,12 +41,12 @@ def save_to_disk(
     output_dir: PathOrStr,
     model: PreTrainedModel | None = None,
     tokenizer: Tokenizer | None = None,
-    save_precision: PrecisionType = PrecisionType.NO,
+    save_precision: MixedPrecisionType = MixedPrecisionType.no,
 ):
     if model:
-        if save_precision == PrecisionType.FP16:
+        if save_precision == MixedPrecisionType.fp16:
             model = model.to(dtype=torch.float16)
-        elif save_precision == PrecisionType.BF16:
+        elif save_precision == MixedPrecisionType.bf16:
             model = model.to(dtype=torch.bfloat16)
         model.save_pretrained(str(output_dir))
 

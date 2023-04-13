@@ -9,11 +9,11 @@ import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from accelerate import Accelerator
-from accelerate.utils import set_seed, ProjectConfiguration, PrecisionType
+from accelerate.utils import set_seed, ProjectConfiguration
 from transformers import get_cosine_schedule_with_warmup
 
 from collie.trainer import Trainer
-from collie.types import LanguageModelType
+from collie.types import LanguageModelType, MixedPrecisionType
 from collie.manager import get_model_manager, get_model_type_from_name
 from collie.data import InstructionDataset, PreTokenizedCollator
 from collie.utils.io import save_to_disk
@@ -47,8 +47,8 @@ def main(
     seed: int = 42,
     lr: float = 2e-5,
     weight_decay: float = 1e-3,
-    mixed_precision: PrecisionType = PrecisionType.BF16,
-    save_precision: Optional[PrecisionType] = None,
+    mixed_precision: MixedPrecisionType = MixedPrecisionType.bf16,
+    save_precision: Optional[MixedPrecisionType] = None,
     gradient_accumulation_steps: int = 1,
     model_type: Optional[LanguageModelType] = None,
     save_on_epoch_end: bool = False,
