@@ -9,13 +9,14 @@ import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from accelerate import Accelerator
-from accelerate.utils import set_seed, ProjectConfiguration
+from accelerate.utils import set_seed, ProjectConfiguration, PrecisionType
 from transformers import get_cosine_schedule_with_warmup
 
 from collie.trainer import Trainer
 from collie.types import LanguageModelType
 from collie.manager import get_model_manager, get_model_type_from_name
 from collie.data import InstructionDataset, PreTokenizedCollator
+from collie.utils.io import save_to_disk
 
 
 def create_adamw_optimizer(model: torch.nn.Module, lr: float, weight_decay=1e-3):
@@ -38,7 +39,6 @@ def create_adamw_optimizer(model: torch.nn.Module, lr: float, weight_decay=1e-3)
 def main(
     model_name_or_path: str,
     train_file: str,
-    model_type: Optional[LanguageModelType] = None,
     output_dir: Optional[Path] = None,
     epochs: int = 3,
     batch_size: int = 4,
@@ -47,8 +47,10 @@ def main(
     seed: int = 42,
     lr: float = 2e-5,
     weight_decay: float = 1e-3,
-    mixed_precision: str = 'bf16',
+    mixed_precision: PrecisionType = PrecisionType.BF16,
+    save_precision: Optional[PrecisionType] = None,
     gradient_accumulation_steps: int = 1,
+    model_type: Optional[LanguageModelType] = None,
     save_on_epoch_end: bool = False,
     num_max_checkpoints: int = 1,
     num_warmup_steps: float = 0.05,
@@ -56,7 +58,13 @@ def main(
 ):
     # Prepare Accelerator
     os.environ.setdefault('TRANSFORMERS_NO_ADVISORY_WARNINGS', '1')
-    model_type = model_type or get_model_type_from_name(model_name_or_path)
+
+    if model_type is None:
+        model_type = get_model_type_from_name(model_name_or_path)
+
+    if save_precision is None:
+        save_precision = mixed_precision
+
     output_dir = output_dir or Path('experiments') / f'{model_type}-fft'
     project_config = ProjectConfiguration(
         project_dir=str(output_dir), automatic_checkpoint_naming=True, total_limit=num_max_checkpoints
@@ -123,8 +131,7 @@ def main(
 
     accelerator.print('Saving model')
     unwrapped_model = accelerator.unwrap_model(model)
-    unwrapped_model.save_pretrained(output_dir / 'model')
-    tokenizer.save_pretrained(output_dir / 'model')
+    save_to_disk(output_dir / 'model', model=unwrapped_model, tokenizer=tokenizer, save_precision=save_precision)
 
 
 if __name__ == '__main__':

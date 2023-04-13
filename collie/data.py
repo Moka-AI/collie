@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from datasets import Dataset as HFDataset
 
 from collie.types import Tokenizer, PathOrStr
-from collie.utils.file import load_dataset_from_file
+from collie.utils.io import load_dataset_from_file
 from collie.utils.tokenizer import infer_num_end_tokens
 
 IGNORE_INDEX = -100

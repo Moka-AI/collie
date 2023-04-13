@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from typing import cast
 from pathlib import Path
 
+import torch
 from datasets import load_dataset, DatasetDict
 
-from collie.types import PathOrStr
+from collie.types import PathOrStr, Tokenizer, PreTrainedModel, PrecisionType
 
 
 def convert_suffix_to_type(suffix: str):
@@ -32,3 +35,20 @@ def load_dataset_from_file(file_path: PathOrStr, file_type: str = 'auto', **kwar
     dataset_dict = cast(DatasetDict, dataset_dict)
     dataset = dataset_dict['train']
     return dataset
+
+
+def save_to_disk(
+    output_dir: PathOrStr,
+    model: PreTrainedModel | None = None,
+    tokenizer: Tokenizer | None = None,
+    save_precision: PrecisionType = PrecisionType.NO,
+):
+    if model:
+        if save_precision == PrecisionType.FP16:
+            model = model.to(dtype=torch.float16)
+        elif save_precision == PrecisionType.BF16:
+            model = model.to(dtype=torch.bfloat16)
+        model.save_pretrained(str(output_dir))
+
+    if tokenizer:
+        tokenizer.save_pretrained(str(output_dir))

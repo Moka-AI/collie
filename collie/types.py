@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import TypeVar, Sequence, Union
 from enum import Enum
 
+from accelerate.utils import PrecisionType as PrecisionType
+from transformers import PreTrainedModel as PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 from transformers.models.auto.auto_factory import _BaseAutoModelClass
