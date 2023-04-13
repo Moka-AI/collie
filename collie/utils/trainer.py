@@ -25,7 +25,7 @@ class LossTracker:
         self._loss = 0
         self.loss_count = 0
 
-    def end_epoch(self, reset: bool = True):
+    def on_epoch_end(self, reset: bool = True):
         self.history.append(self.loss)
         if reset:
             self.reset()
@@ -51,8 +51,12 @@ class CollieTqdmProgressBar:
         self.accelerator = Accelerator()
         self.epochs = epochs
         self.current_epoch = 1
+        self.num_steps_per_epoch = num_steps_per_epoch
+        self.tqdm_kwargs = kwargs
+
+    def on_epoch_start(self):
         if self.accelerator.is_main_process:
-            self.progress_bar = tqdm.tqdm(total=num_steps_per_epoch, **kwargs)
+            self.progress_bar = tqdm.tqdm(total=self.num_steps_per_epoch, **self.tqdm_kwargs)
         else:
             self.progress_bar = DummyProgressBar()
 
@@ -62,8 +66,8 @@ class CollieTqdmProgressBar:
     def close(self) -> None:
         self.progress_bar.close()
 
-    def end_epoch(self) -> None:
-        self.epochs += 1
+    def on_epoch_end(self) -> None:
+        self.current_epoch += 1
         self.progress_bar.close()
 
     def show_metrics(self, metrics: dict[str, float]) -> None:

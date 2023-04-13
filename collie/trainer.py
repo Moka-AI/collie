@@ -37,14 +37,14 @@ class Trainer:
 
         self.train_loss_tracker = LossTracker()
         self.validation_loss_tracker = LossTracker()
+        self.progress_bar = CollieTqdmProgressBar(self.epochs, len(self.train_dataloader))
         self.epoch_end_callbacks = epoch_end_callbacks or []
+        self.current_step = 0
 
     def train(self):
-        step = 0
-        self.progress_bar = CollieTqdmProgressBar(self.epochs, len(self.train_dataloader))
-
         for current_epoch in range(1, self.epochs + 1):
             self.model.train()
+            self.progress_bar.on_epoch_start()
 
             for batch_index, batch in enumerate(self.train_dataloader):
                 with self.accelerator.accumulate(self.model):
@@ -58,14 +58,14 @@ class Trainer:
                     self.train_loss_tracker.update(loss)
 
                 self.progress_bar.update()
-                step += 1
+                self.current_step += 1
                 if batch_index % self.log_interval == 0:
-                    self.log_metrics({'loss': self.train_loss_tracker.loss}, step=step)
+                    self.log_metrics({'loss': self.train_loss_tracker.loss}, step=self.current_step)
 
             train_metrics = self.add_prefix({'loss': self.train_loss_tracker.loss}, 'train')
             self.accelerator.log(train_metrics, step=current_epoch)
-            self.train_loss_tracker.end_epoch()
-            self.progress_bar.end_epoch()
+            self.train_loss_tracker.on_epoch_end()
+            self.progress_bar.on_epoch_end()
 
             if self.validation_dataloader:
                 validation_loss = evaluate(self.model, self.validation_dataloader, self.validation_loss_tracker)
@@ -98,5 +98,5 @@ def evaluate(model: torch.nn.Module, dataloader: DataLoader, loss_tracker: LossT
             batch_output = model(**batch)
             loss_tracker.update(batch_output['loss'])
     loss = loss_tracker.loss
-    loss_tracker.end_epoch()
+    loss_tracker.on_epoch_end()
     return loss
