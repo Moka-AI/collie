@@ -3,13 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 import torch
-import tqdm
 from accelerate import Accelerator
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
-from collie.utils.trainer import LossTracker, DummyProgressBar
+from collie.utils.trainer import LossTracker, CollieTqdmProgressBar
 
 
 class Trainer:
@@ -41,11 +40,12 @@ class Trainer:
         self.epoch_end_callbacks = epoch_end_callbacks or []
 
     def train(self):
-        num_cumulate_batch = 0
-        for current_epoch in range(1, self.epochs + 1):
+        step = 0
+        self.progress_bar = CollieTqdmProgressBar(self.epochs, len(self.train_dataloader))
 
-            self.set_progress_bar()
-            self.model = self.model.train()
+        for current_epoch in range(1, self.epochs + 1):
+            self.model.train()
+
             for batch_index, batch in enumerate(self.train_dataloader):
                 with self.accelerator.accumulate(self.model):
                     self.optimizer.zero_grad()
@@ -57,28 +57,20 @@ class Trainer:
                         self.lr_scheduler.step()
                     self.train_loss_tracker.update(loss)
 
-                self.progress_bar.update(1)
-                num_cumulate_batch += 1
-
+                self.progress_bar.update()
+                step += 1
                 if batch_index % self.log_interval == 0:
-                    self.accelerator.log({'loss': self.train_loss_tracker.loss}, step=num_cumulate_batch)
-                    self.set_progress_bar_description(current_epoch, {'loss': self.train_loss_tracker.loss})
+                    self.log_metrics({'loss': self.train_loss_tracker.loss}, step=step)
 
             train_metrics = self.add_prefix({'loss': self.train_loss_tracker.loss}, 'train')
             self.accelerator.log(train_metrics, step=current_epoch)
             self.train_loss_tracker.end_epoch()
-            self.progress_bar.close()
+            self.progress_bar.end_epoch()
 
             if self.validation_dataloader:
-                self.model = self.model.eval()
-                for batch in self.validation_dataloader:
-                    with torch.inference_mode():
-                        batch_output = self.model(**batch)
-                        self.validation_loss_tracker.update(batch_output['loss'])
-
-                validation_metrics = self.add_prefix({'loss': self.validation_loss_tracker.loss}, 'validation')
+                validation_loss = evaluate(self.model, self.validation_dataloader, self.validation_loss_tracker)
+                validation_metrics = self.add_prefix({'loss': validation_loss}, 'validation')
                 self.accelerator.log(validation_metrics, step=current_epoch)
-                self.validation_loss_tracker.end_epoch()
 
             if self.save_on_epoch_end:
                 self.accelerator.save_state()
@@ -89,18 +81,22 @@ class Trainer:
 
         self.accelerator.end_training()
 
-    def set_progress_bar(self) -> None:
-        if self.accelerator.is_main_process:
-            self.progress_bar = tqdm.tqdm(total=len(self.train_dataloader))
-        else:
-            self.progress_bar = DummyProgressBar(total=len(self.train_dataloader))
-
-    def set_progress_bar_description(self, current_epoch: int, metrics: dict[str, float]) -> None:
-        description = f'Epoch {current_epoch}/{self.epochs}'
-        for name, score in metrics.items():
-            description += f' - {name}: {score:.4f}'
-        self.progress_bar.set_description(description)
+    def log_metrics(self, metrics: dict[str, float], step: int):
+        self.accelerator.log(metrics, step=step)
+        self.progress_bar.show_metrics(metrics)
 
     @staticmethod
     def add_prefix(values: dict[str, Any], prefix: str):
         return {f'{prefix}/{k}': v for k, v in values.items()}
+
+
+def evaluate(model: torch.nn.Module, dataloader: DataLoader, loss_tracker: LossTracker | None = None):
+    model = model.eval()
+    loss_tracker = loss_tracker or LossTracker()
+    for batch in dataloader:
+        with torch.inference_mode():
+            batch_output = model(**batch)
+            loss_tracker.update(batch_output['loss'])
+    loss = loss_tracker.loss
+    loss_tracker.end_epoch()
+    return loss

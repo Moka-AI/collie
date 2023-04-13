@@ -1,8 +1,6 @@
 # Collie
-|||
+| <img src="./logo/collie.png" alt="collie.png" style="zoom:15%;" /> | Collie Herding Sheep, Collie Finetune LLaMa. 🐕 🌿 🐑, 🐕‍🦺 🛠️ 🦙 |
 | ------------------------------------------------------------ | ---------------------------------------------------- |
-| <img src="./logo/collie.png" alt="collie.png" style="zoom:15%;" /> | Collie Herding Sheep, Collie Finetune LLaMa.<br /> 🐕 🌿 🐑, 🐕‍🦺 🛠️ 🦙 |
-
 
 
 ## Getting started
@@ -53,3 +51,9 @@ make test
 # check code style & lint code
 make lint
 ```
+
+## TODO
+- [ ] github action
+- [ ] chat format data
+- [ ] instrucion testing
+- [ ] lora finetune

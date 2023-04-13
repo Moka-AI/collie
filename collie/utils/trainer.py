@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import torch
 
+from accelerate import Accelerator
+import tqdm
+
 
 class LossTracker:
     def __init__(
@@ -33,9 +36,6 @@ class LossTracker:
 
 
 class DummyProgressBar:
-    def __init__(self, total: int) -> None:
-        self.total = total
-
     def update(self, n: int = 1) -> None:
         pass
 
@@ -44,3 +44,30 @@ class DummyProgressBar:
 
     def set_description(self, description: str) -> None:
         pass
+
+
+class CollieTqdmProgressBar:
+    def __init__(self, epochs: int, num_steps_per_epoch: int, **kwargs) -> None:
+        self.accelerator = Accelerator()
+        self.epochs = epochs
+        self.current_epoch = 1
+        if self.accelerator.is_main_process:
+            self.progress_bar = tqdm.tqdm(total=num_steps_per_epoch, **kwargs)
+        else:
+            self.progress_bar = DummyProgressBar()
+
+    def update(self, n: int = 1) -> None:
+        self.progress_bar.update(n)
+
+    def close(self) -> None:
+        self.progress_bar.close()
+
+    def end_epoch(self) -> None:
+        self.epochs += 1
+        self.progress_bar.close()
+
+    def show_metrics(self, metrics: dict[str, float]) -> None:
+        description = f'Epoch {self.current_epoch}/{self.epochs}'
+        for name, score in metrics.items():
+            description += f' - {name}: {score:.4f}'
+        self.progress_bar.set_description(description)

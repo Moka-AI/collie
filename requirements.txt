@@ -3,3 +3,4 @@ accelerate
 transformers
 datasets
 tqdm
+typer[all]
