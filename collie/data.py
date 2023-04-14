@@ -83,7 +83,9 @@ class InstructionDataset(Dataset):
         num_end_tokens: int | None = None,
     ):
         if Path(name_or_path).is_file():
-            return cls.from_file(name_or_path, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens)
+            return cls.from_file(
+                name_or_path, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens
+            )
         else:
             if Path(name_or_path).is_dir():
                 dataset = load_from_disk(name_or_path)
@@ -93,7 +95,9 @@ class InstructionDataset(Dataset):
             if isinstance(dataset, dict):
                 dataset = dataset['train']
             dataset = cast(HFDataset, dataset)
-            return cls.from_raw_dataset(dataset, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens)
+            return cls.from_raw_dataset(
+                dataset, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens
+            )
 
     @classmethod
     def from_file(
