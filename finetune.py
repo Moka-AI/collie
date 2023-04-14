@@ -38,7 +38,7 @@ def create_adamw_optimizer(model: torch.nn.Module, lr: float, weight_decay=1e-3)
 
 def main(
     model_name_or_path: str,
-    train_file: str,
+    data_name_or_path: str,
     output_dir: Optional[Path] = None,
     epochs: int = 3,
     batch_size: int = 4,
@@ -91,7 +91,7 @@ def main(
 
     # DataLoader
     tokenizer = model_manager.build_tokenizer()
-    dataset = InstructionDataset.from_file(train_file, tokenizer, max_length=max_length, num_proc=num_workers)
+    dataset = InstructionDataset.from_name_or_path(data_name_or_path, tokenizer, max_length=max_length, num_proc=num_workers)
     data_collator = PreTokenizedCollator(tokenizer)
     train_dataloader = DataLoader(
         dataset, batch_size=batch_size, collate_fn=data_collator, shuffle=True, num_workers=num_workers, pin_memory=True

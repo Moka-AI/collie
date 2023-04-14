@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import random
 import warnings
+from pathlib import Path
 from typing import Any, List, Sequence, cast
 
 import torch
 from torch.utils.data import Dataset
-from datasets import Dataset as HFDataset
+from datasets import Dataset as HFDataset, load_dataset, load_from_disk
 
 from collie.types import Tokenizer, PathOrStr
 from collie.utils.io import load_dataset_from_file
@@ -73,6 +74,28 @@ class InstructionDataset(Dataset):
         return self.data[index]
 
     @classmethod
+    def from_name_or_path(
+        cls,
+        name_or_path: str,
+        tokenizer: Tokenizer,
+        max_length: int | None = None,
+        num_proc: int | None = None,
+        num_end_tokens: int | None = None,
+    ):
+        if Path(name_or_path).is_file():
+            return cls.from_file(name_or_path, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens)
+        else:
+            if Path(name_or_path).is_dir():
+                dataset = load_from_disk(name_or_path)
+            else:
+                dataset = load_dataset(name_or_path)
+
+            if isinstance(dataset, dict):
+                dataset = dataset['train']
+            dataset = cast(HFDataset, dataset)
+            return cls.from_raw_dataset(dataset, tokenizer, max_length=max_length, num_proc=num_proc, num_end_tokens=num_end_tokens)
+
+    @classmethod
     def from_file(
         cls,
         file_path: PathOrStr,
@@ -82,16 +105,28 @@ class InstructionDataset(Dataset):
         num_proc: int | None = None,
         num_end_tokens: int | None = None,
     ):
+        dataset = load_dataset_from_file(file_path, file_type)
+        return cls.from_raw_dataset(dataset, tokenizer, max_length, num_proc, num_end_tokens)
+
+    @classmethod
+    def from_raw_dataset(
+        cls,
+        dataset: HFDataset,
+        tokenizer: Tokenizer,
+        max_length: int | None = None,
+        num_proc: int | None = None,
+        num_end_tokens: int | None = None,
+    ):
+        assert set(dataset[0].keys()) == {'output', 'instruction'}
+
         if num_proc is not None and num_proc > 1:
             os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+
         max_length = max_length or tokenizer.model_max_length
         print(f'max_length: {max_length}')
 
         if num_end_tokens is None:
             num_end_tokens = infer_num_end_tokens(tokenizer)
-
-        dataset = load_dataset_from_file(file_path, file_type)
-        assert set(dataset[0].keys()) == {'output', 'instruction'}
 
         def _process_instruction_record(record):
             return {

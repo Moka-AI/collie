@@ -29,3 +29,9 @@ class MixedPrecisionType(str, Enum):
     no = 'no'
     fp8 = 'fp8'
     auto = 'auto'
+
+
+class DataType(str, Enum):
+    file = 'file'
+    hf_dataset = 'hf_dataset'
+    auto = 'auto'
