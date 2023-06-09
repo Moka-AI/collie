@@ -7,9 +7,9 @@
 
 ### install dependencies
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 # if dev
-pip install dev-requirements.txt
+pip install -r dev-requirements.txt
 ```
 
 ### prepare data
